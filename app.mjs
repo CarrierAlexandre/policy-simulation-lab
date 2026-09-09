@@ -2,7 +2,7 @@ import {DEFAULT_SETTINGS,reference,validateSettings,components,simulate,activity
 import {MODELS,DEFAULT_MODEL_ID,modelInfo,loadModel} from './models.mjs';
 import {setupTransmission} from './transmission-view.mjs';
 import {SCENARIOS,DEFAULT_SCENARIO_ID,scenarioInfo} from './scenarios.mjs';
-import {cleanTag,validTag,normalizeLeaderboards,rankEntries} from './leaderboard.mjs';
+import {cleanTag,validTag,normalizeLeaderboards,readLeaderboardDocument,leaderboardView,displayScore} from './leaderboard.mjs';
 
 const $=id=>document.getElementById(id);
 let settings={...DEFAULT_SETTINGS};
@@ -15,6 +15,8 @@ let gameMode='practice';
 let evaluation={tag:'',scenarioId:null,submitted:false};
 let currentAttempt=null,leaderboardScenarioId=activeScenarioId;
 let publishedLeaderboards=normalizeLeaderboards({},SCENARIOS.map(s=>s.id));
+let leaderboardMeta={eventId:'',submissionsOpen:false,updatedAt:null};
+let leaderboardLoaded=false,leaderboardError=false,leaderboardRequest=null;
 const transmissionView=setupTransmission(activeModelId);
 const num=(v,d=2)=>Number(v).toLocaleString('en-GB',{minimumFractionDigits:d,maximumFractionDigits:d});
 const rateText=v=>Math.abs(v*100-Math.round(v*100))<1e-9?v.toFixed(2):String(v);
@@ -81,49 +83,75 @@ function renderMode(){
   $('reset').disabled=submitted;
   $('reset').textContent=evaluating?'Reset path':'Reset';
   const simulateText=$('simulate').querySelector('span');
-  simulateText.textContent=evaluating?(submitted?'Evaluation submitted':'Submit evaluated path'):'Simulate policy';
+  simulateText.textContent=evaluating?(submitted?'Evaluation complete':'Calculate final score'):'Simulate policy';
   $('simulate').disabled=!model||submitted;
   const custom=activeModelId!==DEFAULT_MODEL_ID||Object.keys(DEFAULT_SETTINGS).some(k=>(k!=='shockCount'||settings.commitmentMode==='limited')&&settings[k]!==DEFAULT_SETTINGS[k]);
   $('round-mode').hidden=!(evaluating||custom);
-  $('round-mode').textContent=evaluating?'Official evaluation':'Custom practice';
+  $('round-mode').textContent=evaluating?'Evaluation':'Custom practice';
   $('round-mode').classList.toggle('evaluation',evaluating);
   $('evaluation-meta').hidden=!evaluating;
-  if(evaluating)$('evaluation-meta').textContent=`${evaluation.tag} · ${scenarioInfo(evaluation.scenarioId).button} · official attempt`;
+  if(evaluating)$('evaluation-meta').textContent=`${evaluation.tag} · ${scenarioInfo(evaluation.scenarioId).title}${evaluation.eventId?` · ${evaluation.eventId}`:''}`;
+}
+
+function entryInstructions(attempt=null){
+  if(attempt?.eventId&&attempt.eventId!==leaderboardMeta.eventId)return 'This result belongs to an earlier event. It is not ranked against the current event.';
+  if(!leaderboardLoaded)return 'Event information is unavailable. Your result stays on this device.';
+  if(leaderboardError)return 'The event status could not be refreshed. Keep your screenshot and check Refresh rankings before sending your entry.';
+  if(!leaderboardMeta.eventId)return 'No competition is open. You can still evaluate your policy and explore the published rankings.';
+  if(!leaderboardMeta.submissionsOpen)return 'Event submissions are closed. The published rankings remain available; no screenshot needs to be sent.';
+  if(attempt&&!attempt.eventId)return 'This round started outside the event. Return to practice and start a new evaluated round to enter.';
+  return 'To enter the event, send Alexandre Carrier a screenshot on Teams showing your gametag, scenario, event code and score. Rankings are updated periodically. Use the same gametag throughout the event; only your first entry per scenario counts.';
 }
 
 function renderLeaderboard(){
   const active=scenarioInfo(leaderboardScenarioId);
   $('leaderboard-tabs').innerHTML=SCENARIOS.map(s=>`<button type="button" role="tab" data-leaderboard-scenario="${esc(s.id)}" aria-selected="${s.id===leaderboardScenarioId}" aria-controls="leaderboard-panel">${esc(s.button)}</button>`).join('');
-  const published=publishedLeaderboards[leaderboardScenarioId]??[];
-  const entries=[...published];
-  if(currentAttempt&&currentAttempt.scenarioId===leaderboardScenarioId&&Number.isFinite(currentAttempt.score))entries.push({...currentAttempt,current:true});
-  const ranked=rankEntries(entries);
-  $('leaderboard-rows').innerHTML=ranked.map(entry=>`<tr class="${entry.current?'current-row':''}"><td>${entry.rank}</td><th scope="row">${esc(entry.tag)}${entry.current?'<span>your result</span>':''}</th><td>${esc(signed(entry.score,2))}%</td></tr>`).join('');
+  const {entries:ranked,status:comparisonStatus}=leaderboardView(publishedLeaderboards,leaderboardScenarioId,currentAttempt,leaderboardMeta.eventId);
+  $('leaderboard-comparison').textContent=comparisonStatus==='provisional'?'Provisional comparison: your result alongside the published entries.':'Published rankings';
+  $('leaderboard-rows').innerHTML=ranked.map(entry=>`<tr class="${entry.current?'current-row':''}"><td>${entry.rank}</td><th scope="row">${esc(entry.tag)}${entry.current?`<span>${entry.provisional?'provisional':'your published entry'}</span>`:''}</th><td>${esc(signed(entry.score,2))}%</td></tr>`).join('');
   $('leaderboard-empty').hidden=ranked.length>0;
   $('leaderboard-panel').setAttribute('aria-label',`${active.button} leaderboard`);
   $('current-attempt').hidden=!currentAttempt;
   if(currentAttempt){
     const ownScenario=scenarioInfo(currentAttempt.scenarioId);
     const ownScore=Number.isFinite(currentAttempt.score)?`${signed(currentAttempt.score,2)}%`:'Undefined';
-    $('current-attempt').innerHTML=`<div><span>Your evaluated result</span><strong>${esc(currentAttempt.tag)}</strong><small>${esc(ownScenario.button)}</small></div><b>${esc(ownScore)}</b>`;
+    const {status}=leaderboardView(publishedLeaderboards,currentAttempt.scenarioId,currentAttempt,leaderboardMeta.eventId);
+    const receiptStatus=status==='published'?'Entry included in the published leaderboard':status==='already-recorded'?'This gametag already has a published entry for this scenario':status==='different-event'?'Result from an earlier event':!Number.isFinite(currentAttempt.score)?'No competition score: percentage improvement is undefined':!currentAttempt.eventId?'Personal evaluated result':'Provisional result · not yet entered';
+    $('current-attempt').innerHTML=`<div class="receipt-heading">Policy Simulation Lab · evaluated result</div><div class="receipt-details"><div><span>Gametag</span><strong>${esc(currentAttempt.tag)}</strong><span>Scenario</span><strong class="receipt-scenario">${esc(ownScenario.title)}</strong><small>${currentAttempt.eventId?'Event: '+esc(currentAttempt.eventId):'Outside an event'}</small></div><div class="receipt-score"><b>${esc(ownScore)}</b><span>Improvement over reference</span></div></div><div class="receipt-status">${esc(receiptStatus)}</div>`;
   }
+  $('entry-instructions').hidden=!currentAttempt;
+  $('entry-instructions').textContent=entryInstructions(currentAttempt);
+  $('evaluation-entry-instructions').textContent=entryInstructions();
+  $('leaderboard-event').textContent=leaderboardMeta.eventId?`${leaderboardMeta.eventId} · ${leaderboardMeta.submissionsOpen?'Submissions open':'Submissions closed'}`:'Published rankings';
+  $('leaderboard-updated').textContent=leaderboardMeta.updatedAt?'Last published update: '+new Date(leaderboardMeta.updatedAt).toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'}):leaderboardLoaded?'No publication time supplied yet.':'Loading published rankings…';
+  $('leaderboard-error').hidden=!leaderboardError;
+  $('leaderboard-error').textContent=leaderboardLoaded?'Could not refresh. The last loaded rankings are shown; try Refresh rankings.':'Published rankings are unavailable. Your result is shown on this device; try Refresh rankings.';
+  $('refresh-leaderboard').disabled=!!leaderboardRequest;
 }
 
 function openLeaderboard(scenarioId=activeScenarioId){
   leaderboardScenarioId=scenarioId;
   renderLeaderboard();
   $('leaderboard-dialog').showModal();
+  void loadLeaderboards();
 }
 
 async function loadLeaderboards(){
-  try{
-    const response=await fetch('./data/leaderboard.json',{cache:'no-store'});
-    if(!response.ok)throw new Error('Leaderboard unavailable');
-    publishedLeaderboards=normalizeLeaderboards(await response.json(),SCENARIOS.map(s=>s.id));
-    renderLeaderboard();
-  }catch{
-    $('leaderboard-note').textContent='The published leaderboard could not be loaded. Your evaluated result is still calculated on this device and can be given to the controller on paper.';
-  }
+  if(leaderboardRequest)return leaderboardRequest;
+  leaderboardRequest=(async()=>{
+    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),10000);
+    try{
+      const response=await fetch(`./data/leaderboard.json?v=${Date.now()}`,{cache:'no-store',signal:controller.signal});
+      if(!response.ok)throw new Error('Leaderboard unavailable');
+      const document=readLeaderboardDocument(await response.json());
+      publishedLeaderboards=document.boards;leaderboardMeta=document.meta;
+      leaderboardLoaded=true;leaderboardError=false;
+    }catch{leaderboardError=true;}
+    finally{clearTimeout(timeout);}
+  })();
+  renderLeaderboard();
+  try{await leaderboardRequest;}
+  finally{leaderboardRequest=null;renderLeaderboard();}
 }
 
 function renderRateChart(){
@@ -162,7 +190,7 @@ function renderOutcomes(){
 function renderStatus(){
   const el=$('results-status');el.className='result-status';
   if(gameMode==='evaluation'&&!result){el.textContent='Evaluation ready';}
-  else if(gameMode==='evaluation'&&result){el.textContent='Evaluation submitted';el.classList.add('ready');}
+  else if(gameMode==='evaluation'&&result){el.textContent='Evaluation complete';el.classList.add('ready');}
   else if(dirty&&result){el.textContent='Update simulation';el.classList.add('stale');}
   else if(result){el.textContent='Policy simulated';el.classList.add('ready');}
   else el.textContent='Reference outlook';
@@ -196,7 +224,7 @@ function renderScore(){
   $('score-number').hidden=!result;
   if(result){
     $('score-number').className='score-number'+(result.score===null||result.score===0?' neutral':result.score<0?' negative':'');
-    $('score-number').innerHTML=result.score===null?'—':`${esc(signed(result.score))}<small>%</small>`;
+    $('score-number').innerHTML=result.score===null?'—':`${esc(signed(gameMode==='evaluation'?displayScore(result.score):result.score,gameMode==='evaluation'?2:1))}<small>%</small>`;
     $('score-title').textContent=result.score===null?'Compare the total loss':'Improvement over reference';
     $('score-summary').textContent=describeResult();
   }else{
@@ -282,7 +310,7 @@ $('simulate').addEventListener('click',()=>{
     result=simulate(model,chosen,settings,activeScenarioId);rates=chosen;dirty=false;clearError();renderRateChart();renderOutcomes();renderScore();
     if(gameMode==='evaluation'){
       evaluation.submitted=true;
-      currentAttempt={tag:evaluation.tag,scenarioId:evaluation.scenarioId,score:result.score};
+      currentAttempt={tag:evaluation.tag,scenarioId:evaluation.scenarioId,eventId:evaluation.eventId,score:result.score===null?null:displayScore(result.score)};
       renderRateChart();renderInputs();renderMode();
       openLeaderboard(evaluation.scenarioId);
       return;
@@ -364,6 +392,8 @@ $('evaluation-mode').addEventListener('click',()=>{
   if(gameMode==='evaluation')return;
   $('evaluation-scenario').textContent=scenarioInfo(activeScenarioId).title;
   $('gametag').value='';$('evaluation-error').hidden=true;
+  $('evaluation-entry-instructions').textContent=entryInstructions();
+  void loadLeaderboards();
   $('evaluation-dialog').showModal();
   $('gametag').focus();
 });
@@ -378,11 +408,12 @@ $('evaluation-form').addEventListener('submit',async event=>{
   }
   button.disabled=true;$('evaluation-error').hidden=true;
   try{
+    await loadLeaderboards();
     const loadVersion=++modelLoadVersion;
     const officialModel=activeModelId===DEFAULT_MODEL_ID&&model?model:await loadModel(DEFAULT_MODEL_ID);
     if(loadVersion!==modelLoadVersion)return;
     settings={...DEFAULT_SETTINGS};model=officialModel;activeModelId=DEFAULT_MODEL_ID;
-    gameMode='evaluation';evaluation={tag,scenarioId:activeScenarioId,submitted:false};
+    gameMode='evaluation';evaluation={tag,scenarioId:activeScenarioId,eventId:leaderboardLoaded&&leaderboardMeta.submissionsOpen?leaderboardMeta.eventId:'',submitted:false};
     $('evaluation-dialog').close();renderContext();reset();
   }catch{
     $('evaluation-error').textContent='The official model could not be loaded. Check your connection and try again.';
@@ -391,6 +422,9 @@ $('evaluation-form').addEventListener('submit',async event=>{
 });
 
 $('open-leaderboard').addEventListener('click',()=>openLeaderboard(activeScenarioId));
+$('refresh-leaderboard').addEventListener('click',()=>void loadLeaderboards());
+setInterval(()=>{if(document.visibilityState==='visible')void loadLeaderboards();},60000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void loadLeaderboards();});
 $('close-leaderboard').addEventListener('click',()=>$('leaderboard-dialog').close());
 $('leaderboard-close-action').addEventListener('click',()=>$('leaderboard-dialog').close());
 $('leaderboard-tabs').addEventListener('click',event=>{

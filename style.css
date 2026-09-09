@@ -1,5 +1,24 @@
 @charset "UTF-8";
 
+/* Event receipts and periodically refreshed public rankings. */
+.current-attempt:not([hidden]){display:block}
+.current-attempt .receipt-heading{display:block;font-size:.875rem;color:#d2e5ed;margin-bottom:14px}
+.current-attempt .receipt-details{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:16px}
+.receipt-details>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.current-attempt .receipt-details span,.current-attempt .receipt-details small{font-size:.875rem;line-height:1.45}
+.current-attempt .receipt-details strong{font-size:1.125rem;overflow-wrap:anywhere}
+.current-attempt .receipt-details .receipt-scenario{font-size:1rem}
+.receipt-score{max-width:155px;text-align:right}
+.current-attempt .receipt-status{display:block;font-size:.875rem;line-height:1.5;border-top:1px solid #ffffff35;padding-top:11px;margin-top:13px;color:#d2e5ed}
+.entry-instructions{font-size:1rem;line-height:1.6;margin:14px 0 24px}
+.leaderboard-event{font-size:.875rem;font-weight:650;line-height:1.5;margin:0 0 8px;color:var(--teal)}
+.leaderboard-refresh{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:.875rem;line-height:1.5;color:var(--muted)}
+.leaderboard-refresh button{flex-shrink:0;font-size:.875rem;padding:8px 10px}
+.leaderboard-error{font-size:.875rem;line-height:1.5;color:#8b4815;background:#fff8e9;padding:10px 12px;border-radius:6px}
+.leaderboard-comparison{font-size:.875rem;line-height:1.5;color:var(--muted);margin:0 0 8px}
+#leaderboard-note,.evaluation-dialog .evaluation-rules{font-size:.875rem}
+@media(max-width:420px){.current-attempt .receipt-details{align-items:flex-start;flex-direction:column}.receipt-score{max-width:none;text-align:left}.leaderboard-refresh{align-items:flex-start;flex-direction:column}}
+
 /* Always visible above both the policy and outcome panels. */
 .scenario-notice{margin:0 0 24px;padding:14px 18px;border:1px solid #e4d5b6;border-left:4px solid #a47625;border-radius:8px;background:#fff8e9;color:#514329;line-height:1.55}
 .scenario-notice strong{display:block;font-size:.875rem;font-weight:700;margin-bottom:3px}
