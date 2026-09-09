@@ -14,16 +14,14 @@ export function setupTransmission(initialModelId) {
   }
   let activeId=initialModelId,version=0,series=[];
   $('transmission-models').innerHTML=MODELS.map(m=>`<label><input type="checkbox" value="${esc(m.id)}" ${m.id===initialModelId?'checked':''}>${esc(m.label)}</label>`).join('');
-  $('transmission-dates').innerHTML=Array.from({length:40},(_,j)=>`<label><input type="checkbox" value="${j}" ${j===0?'checked':''} aria-label="Shock ${j} quarters ahead"><span>${j}</span></label>`).join('');
   function redraw(){
     for(const [key,name] of [['rates','Annualised interest rate'],['inflation','Year-on-year inflation'],['gap','Output gap']])transmissionChart($(`transmission-${key}`),series,key,`${name}: responses to separate monetary policy shocks, by quarters since announcement.`);
   }
   async function render(){
     const current=++version;
     const ids=[...$('transmission-models').querySelectorAll('input:checked')].map(i=>i.value);
-    const dates=[...$('transmission-dates').querySelectorAll('input:checked')].map(i=>Number(i.value));
+    const dates=[0,4];
     const H=Number($('transmission-horizon').value);
-    $('transmission-date-count').textContent=`${dates.length} selected`;
     series=[];redraw();$('transmission-legend').innerHTML='';$('transmission-tradeoffs').innerHTML='';
     $('transmission-error').hidden=true;
     $('transmission-note').textContent='';
@@ -37,7 +35,7 @@ export function setupTransmission(initialModelId) {
       if(r.status==='rejected'){failed.push(`${info.label}: ${r.reason.message}`);return;}
       for(const j of dates){
         try {
-          series.push({label:`${info.shortLabel} · shock at t=${j}`,color:info.color,dash:LINE_DASHES[dates.indexOf(j)%LINE_DASHES.length],response:impulseResponse(r.value,j,H),tradeoff:transmissionTradeoff(r.value,j)});
+          series.push({label:`${info.shortLabel} · ${j===0?'policy shock today':'policy shock four quarters ahead'}`,color:info.color,dash:LINE_DASHES[dates.indexOf(j)%LINE_DASHES.length],response:impulseResponse(r.value,j,H),tradeoff:transmissionTradeoff(r.value,j)});
         } catch(error) { failed.push(`${info.label} · shock at t=${j}: ${error.message}`); }
       }
     });
@@ -45,14 +43,10 @@ export function setupTransmission(initialModelId) {
     $('transmission-status').textContent=series.length?`${series.length} response${series.length===1?'':'s'} · periods 0–${H-1}`:'No responses available.';
     $('transmission-note').textContent=dates.some(j=>j>=H)?'Some shocks occur beyond the displayed horizon. Their effects before the shock can still appear because the policy change is announced at time 0. Extend the chart horizon to see later outcomes.':'';
     $('transmission-legend').innerHTML=series.map(s=>`<span><svg aria-hidden="true" width="30" height="12"><line x1="0" x2="30" y1="6" y2="6" stroke="${esc(s.color)}" stroke-width="2.5" stroke-dasharray="${esc(s.dash)}"/></svg>${esc(s.label)}</span>`).join('');
-    $('transmission-tradeoffs').innerHTML=series.map(s=>`<div><dt>${esc(s.label)}</dt><dd><strong title="Cumulative output gap: ${esc(fmt(s.tradeoff.output))}; cumulative inflation: ${esc(fmt(s.tradeoff.inflation))}">${s.tradeoff.ratio===null?'Undefined':esc(fmt(s.tradeoff.ratio))}</strong><p>${esc(interpretation(s.tradeoff))}</p></dd></div>`).join('');
+    $('transmission-tradeoffs').innerHTML=series.map(s=>`<div><dt>${esc(s.label)}</dt><dd><strong>${s.tradeoff.ratio===null?'Undefined':esc(fmt(s.tradeoff.ratio))}</strong><p>${esc(interpretation(s.tradeoff))}</p></dd></div>`).join('');
     redraw();
   }
-  for(const id of ['transmission-models','transmission-dates','transmission-horizon'])$(id).addEventListener('change',render);
-  $('transmission-reset').addEventListener('click',()=>{
-    $('transmission-dates').querySelectorAll('input').forEach(i=>{i.checked=i.value==='0';});
-    render();
-  });
+  for(const id of ['transmission-models','transmission-horizon'])$(id).addEventListener('change',render);
   $('close-transmission').addEventListener('click',()=>$('transmission-dialog').close());
   return {
     open(id=activeId){

@@ -18,7 +18,6 @@ export function transmissionTradeoff(model,shockDate=0) {
 }
 
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const f=v=>Number(v).toLocaleString('en-GB',{maximumFractionDigits:2});
 export const LINE_DASHES=['','7 4','2 3','9 3 2 3','12 4','5 2 1 2'];
 
 export function transmissionChart(container,series,key,label) {
@@ -40,8 +39,7 @@ export function transmissionChart(container,series,key,label) {
   for(let t=0;t<n;t++)if(t===0||t===n-1||(t%every===0&&n-1-t>every*.5))svg+=`<text x="${x(t)}" y="${H-8}" text-anchor="middle" class="chart-tick">${t}</text>`;
   for(const s of series){
     const path=s.response[key].map((v,t)=>`${t?'L':'M'}${x(t).toFixed(2)},${y(v).toFixed(2)}`).join(' ');
-    const description=s.response[key].map((v,t)=>`t=${t}: ${f(v)}`).join('; ');
-    svg+=`<path d="${path}" fill="none" stroke="${esc(s.color)}" stroke-width="2.5" stroke-dasharray="${esc(s.dash)}"><title>${esc(s.label+': '+description)}</title></path>`;
+    svg+=`<path d="${path}" fill="none" stroke="${esc(s.color)}" stroke-width="2.5" stroke-dasharray="${esc(s.dash)}"><title>${esc(s.label)}</title></path>`;
   }
   container.innerHTML=svg+'</svg>';
 }
