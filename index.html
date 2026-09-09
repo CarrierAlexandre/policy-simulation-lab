@@ -17,19 +17,28 @@
   </header>
 
   <main>
-    <details class="team-details team-top"><summary>Meet our team and read about our work</summary><div class="method-grid"><div><h3>Our team</h3><ul class="team-list">
+    <div class="community-bar">
+    <details class="team-details team-top"><summary><span class="team-affiliation">DG–Monetary Policy</span><span class="team-action">Meet our team and read about our work <span class="team-chevron" aria-hidden="true">⌄</span></span></summary><div class="method-grid"><div><h3>Our team</h3><ul class="team-list">
 <li><a href="https://carrieralexandre.github.io/" target="_blank" rel="noopener noreferrer">Alexandre Carrier</a> <span>(game development, with Astra’s help)</span></li>
 <li><a href="https://www.ecb.europa.eu/pub/research/authors/profiles/antonio-greco.fr.html" target="_blank" rel="noopener noreferrer">Antonio Greco</a></li>
 <li><a href="https://sites.google.com/site/falkmazelis/home" target="_blank" rel="noopener noreferrer">Falk Mazelis</a></li>
 <li><a href="https://www.ecb.europa.eu/pub/research/authors/profiles/roberto-motto.en.html" target="_blank" rel="noopener noreferrer">Roberto Motto</a></li>
 <li><a href="https://ristiniemi.eu/" target="_blank" rel="noopener noreferrer">Annukka Ristiniemi</a></li>
     </ul></div><div><h3>Read about our work</h3><ul class="team-list"><li><a href="https://github.com/COPPsToolkit/COPPs" target="_blank" rel="noopener noreferrer">COPPs: the policy counterfactual toolkit</a></li><li><a href="https://www.ecb.europa.eu/pub/pdf/scpops/ecb.op372.en.pdf" target="_blank" rel="noopener noreferrer">Report on monetary policy tools, strategy and communication</a> · Occasional Paper 372</li><li><a href="https://www.ecb.europa.eu/pub/pdf/scpwps/ecb.wp3137~e458bce069.en.pdf" target="_blank" rel="noopener noreferrer">Inflation and monetary policy in medium-sized New Keynesian DSGE models</a> · Working Paper 3137</li></ul></div></div></details>
-    <section class="model-band" aria-label="Policy model">
-      <div class="model-options"><span class="model-label">Policy model</span><div id="model-options" class="model-pills" role="group" aria-label="Available models"></div></div>
-      <button type="button" id="open-transmission" class="transmission-button">View transmission ↗</button>
-    </section>
+      <button id="open-leaderboard-top" class="leaderboard-top-button" type="button" aria-haspopup="dialog">Leaderboard</button>
+    </div>
+    <div class="setup-band">
+      <section class="scenario-choice" aria-labelledby="scenario-choice-label">
+        <span id="scenario-choice-label" class="setup-label">Illustrative scenarios</span>
+        <div id="scenario-options" class="scenario-pills" role="group" aria-label="Choose an illustrative economic scenario"><button type="button" data-scenario="energy" data-tone="supply" aria-pressed="true">Energy disruption</button><button type="button" data-scenario="credit" data-tone="negative-demand" aria-pressed="false">Credit squeeze</button><button type="button" data-scenario="boom" data-tone="positive-demand" aria-pressed="false">Spending boom</button></div>
+      </section>
+      <section class="model-band" aria-labelledby="transmission-choice-label">
+        <div class="model-options"><span id="transmission-choice-label" class="setup-label">Policy transmission</span><div id="model-options" class="model-pills" role="group" aria-label="Available models"></div></div>
+        <button type="button" id="open-transmission" class="transmission-button">View transmission ↗</button>
+      </section>
+    </div>
     <section class="briefing" aria-labelledby="scenario-title">
-      <div class="brief-copy"><div class="eyebrow"><span class="scenario-number">01</span><span>ILLUSTRATIVE SCENARIOS</span><div id="scenario-options" class="scenario-pills" role="group" aria-label="Choose an illustrative economic scenario"><button type="button" data-scenario="energy" data-tone="supply" aria-pressed="true">Energy disruption</button><button type="button" data-scenario="credit" data-tone="negative-demand" aria-pressed="false">Credit squeeze</button><button type="button" data-scenario="boom" data-tone="positive-demand" aria-pressed="false">Spending boom</button></div></div><div id="scenario-type" class="scenario-type">Supply shock</div><h1 id="scenario-title">Energy supply disruption<span class="accent-period">.</span></h1><p id="scenario-summary">A disruption to energy supplies drives up prices. Businesses face higher production costs, and households can afford less. Inflation rises while economic activity weakens.</p><details class="brief-details"><summary>Read the full briefing</summary><p id="scenario-story">An unexpected disruption to energy supply pushes up energy prices across Europe. Households face higher bills, while firms pay more to produce and transport goods. As some of these costs feed through to consumer prices, inflation rises. At the same time, households can afford less and firms scale back production, weakening economic activity. The disruption gradually fades, but its effects take time to unwind.</p><p id="scenario-challenge">The reference outlook holds the annualised policy rate at 3%. Choose your own path and navigate the trade-off: bring inflation towards its target, limit weakness in activity and avoid abrupt changes in interest rates.</p></details></div>
+      <div class="brief-copy"><div id="scenario-type" class="scenario-type">Supply shock</div><h1 id="scenario-title">Energy supply disruption<span class="accent-period">.</span></h1><p id="scenario-summary">A disruption to energy supplies drives up prices. Businesses face higher production costs, and households can afford less. Inflation rises while economic activity weakens.</p><details class="brief-details"><summary>Read the full briefing</summary><p id="scenario-story">An unexpected disruption to energy supply pushes up energy prices across Europe. Households face higher bills, while firms pay more to produce and transport goods. As some of these costs feed through to consumer prices, inflation rises. At the same time, households can afford less and firms scale back production, weakening economic activity. The disruption gradually fades, but its effects take time to unwind.</p><p id="scenario-challenge">The reference outlook holds the annualised policy rate at 3%. Choose your own path and navigate the trade-off: bring inflation towards its target, limit weakness in activity and avoid abrupt changes in interest rates.</p></details></div>
       <div class="scenario-facts" aria-label="Reference outlook"><div><span id="fact-inflation-label" class="fact-label">Peak inflation</span><strong id="fact-inflation">5.2<span>%</span></strong></div><div><span id="fact-activity-label" class="fact-label">Lowest output gap</span><strong id="fact-gap">−1.4<span>%</span></strong></div><div><span class="fact-label">Reference rate</span><strong id="fact-rate">3.0<span>%</span></strong></div></div>
     </section>
 
@@ -79,16 +88,24 @@
     </details>
   </main>
   <footer>
-    <div class="footer-line"><span>Policy Simulation Lab <span class="footer-separator">/</span> DG-MP · Policy simulations</span><span class="footer-links"><button id="open-leaderboard" type="button">View leaderboard</button><a href="https://github.com/COPPsToolkit/COPPs" target="_blank" rel="noopener noreferrer">Explore COPPs ↗</a></span></div>
+    <div class="footer-line"><span>Policy Simulation Lab <span class="footer-separator">/</span> DG–Monetary Policy · Policy simulations</span><span class="footer-links"><button id="open-leaderboard" type="button">View leaderboard</button><a href="https://github.com/COPPsToolkit/COPPs" target="_blank" rel="noopener noreferrer">Explore COPPs ↗</a></span></div>
 
   </footer>
 
-  <dialog id="intro-dialog" class="intro-dialog" aria-labelledby="intro-title">
+  <dialog id="intro-dialog" class="intro-dialog player-introduction" aria-labelledby="intro-title">
     <div class="dialog-heading"><span class="step-label">POLICY SIMULATION LAB · ILLUSTRATIVE SCENARIO</span><button id="close-intro" type="button" class="close-button" aria-label="Close introduction">×</button></div>
     <h2 id="intro-title">A shock is hitting the European economy!</h2>
-    <div class="intro-challenge"><h3>Your challenge</h3><p>Bring inflation towards <strong id="intro-target">2%</strong> while limiting weakness or overheating in economic activity. Interest-rate choices affect both with delays, and abrupt changes also carry a cost.</p><p class="challenge-question">How will you balance the trade-off?</p></div>
-    <blockquote><a class="quote-source" href="https://www.ecb.europa.eu/press/press_conference/monetary-policy-statement/2026/html/ecb.is260611~372040d313.en.html" target="_blank" rel="noopener noreferrer">“We are not pre-committing to a particular rate path.”</a></blockquote>
-    <p class="your-turn">This time, you are!</p>
+    <p class="intro-purpose">A fun introduction to some of the analysis we do in <strong>DG–Monetary Policy</strong> to help prepare the Governing Council for its monetary policy decisions.</p>
+    <div class="intro-challenge"><h3>Your challenge</h3><p>Bring inflation towards <strong id="intro-target">2%</strong>, limit weakness or overheating in activity, and avoid abrupt rate changes. These goals form a weighted penalty: the game’s <strong>loss function</strong>.</p><p class="challenge-question">How will you balance the trade-off?</p></div>
+    <ol class="intro-how-to">
+      <li><strong>Choose an economic environment.</strong> Explore an energy disruption, a credit squeeze or a spending boom.</li>
+      <li><strong>Set your interest-rate path.</strong> See how inflation and activity respond. Your score measures the percentage reduction in the loss compared with the reference outlook.</li>
+      <li><strong id="intro-play-heading">Practise or compete.</strong> <span id="intro-play-description">Use Practice to experiment, or Evaluation to see your final score. Checking competition availability…</span></li>
+    </ol>
+    <div class="intro-exchange">
+      <blockquote><a class="quote-source" href="https://www.ecb.europa.eu/press/press_conference/monetary-policy-statement/2026/html/ecb.is260611~372040d313.en.html" target="_blank" rel="noopener noreferrer">“We are not pre-committing to a particular rate path.”</a></blockquote>
+      <p class="your-turn">This time, you are!</p>
+    </div>
     <button id="start-game" type="button" class="primary-button">Choose your rate path →</button>
     <p class="illustrative-note">This website presents a fictional economy and illustrative policy effects drawn from models of monetary policy transmission. This exercise is not an ECB forecast, a policy recommendation or an assessment of past decisions.</p>
   </dialog>
@@ -112,7 +129,6 @@
     <p id="leaderboard-error" class="leaderboard-error" role="status" hidden></p>
     <div id="leaderboard-tabs" class="leaderboard-tabs" role="tablist" aria-label="Economic scenario"></div>
     <div id="leaderboard-panel" role="tabpanel"><p id="leaderboard-comparison" class="leaderboard-comparison"></p><table class="leaderboard-table"><thead><tr><th scope="col">Rank</th><th scope="col">Gametag</th><th scope="col">Improvement</th></tr></thead><tbody id="leaderboard-rows"></tbody></table><p id="leaderboard-empty" class="leaderboard-empty" hidden>No published scores yet for this scenario.</p></div>
-    <p id="leaderboard-note" class="leaderboard-note">Rankings are updated periodically and checked for updates every minute while this page is visible. Scores are compared to two decimal places; equal scores share a rank. Your provisional result is shown only on this device and disappears when you reload. The public leaderboard contains gametags, scenarios and scores only.</p>
     <div class="dialog-actions"><button type="button" id="leaderboard-close-action" class="primary-button">Back to the game</button></div>
   </dialog>
 

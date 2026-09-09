@@ -103,7 +103,20 @@ function entryInstructions(attempt=null){
   return 'To enter the event, send Alexandre Carrier a screenshot on Teams showing your gametag, scenario, event code and score. Rankings are updated periodically. Use the same gametag throughout the event; only your first entry per scenario counts.';
 }
 
+function renderIntroPlay(){
+  const competitionOpen=leaderboardLoaded&&!leaderboardError&&leaderboardMeta.eventId&&leaderboardMeta.submissionsOpen;
+  $('intro-play-heading').textContent=competitionOpen?'Practise or compete.':'Practice and evaluation.';
+  let description='Use Practice to experiment, or Evaluation to see your final score. ';
+  if(competitionOpen)description='Use Practice to experiment, or Evaluation for a competition attempt. Your score appears provisionally on this device until you reload. To join the published leaderboard, send Alexandre Carrier a Teams screenshot showing your scenario, improvement score and gametag. Only your first entry per scenario counts.';
+  else if(leaderboardError)description+='Competition information could not be refreshed. Check the leaderboard for the latest event status.';
+  else if(!leaderboardLoaded)description+='Checking competition availability…';
+  else if(!leaderboardMeta.eventId)description+='No competition is currently open.';
+  else description+='Competition submissions are closed; the published rankings remain available.';
+  $('intro-play-description').textContent=description;
+}
+
 function renderLeaderboard(){
+  renderIntroPlay();
   const active=scenarioInfo(leaderboardScenarioId);
   $('leaderboard-tabs').innerHTML=SCENARIOS.map(s=>`<button type="button" role="tab" data-leaderboard-scenario="${esc(s.id)}" aria-selected="${s.id===leaderboardScenarioId}" aria-controls="leaderboard-panel">${esc(s.button)}</button>`).join('');
   const {entries:ranked,status:comparisonStatus}=leaderboardView(publishedLeaderboards,leaderboardScenarioId,currentAttempt,leaderboardMeta.eventId);
@@ -421,7 +434,7 @@ $('evaluation-form').addEventListener('submit',async event=>{
   }finally{button.disabled=false;}
 });
 
-$('open-leaderboard').addEventListener('click',()=>openLeaderboard(activeScenarioId));
+for(const id of ['open-leaderboard','open-leaderboard-top'])$(id).addEventListener('click',()=>openLeaderboard(activeScenarioId));
 $('refresh-leaderboard').addEventListener('click',()=>void loadLeaderboards());
 setInterval(()=>{if(document.visibilityState==='visible')void loadLeaderboards();},60000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void loadLeaderboards();});

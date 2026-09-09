@@ -1,5 +1,41 @@
 @charset "UTF-8";
 
+/* The team and rankings are visible above the shared scenario/model controls. */
+.community-bar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:14px 22px;margin-bottom:24px}
+.community-bar .team-top{margin:0;min-width:0}
+.community-bar .team-top>summary{display:flex;align-items:center;flex-wrap:wrap;gap:10px 14px;list-style:none;line-height:1.45}
+.community-bar .team-top>summary::-webkit-details-marker{display:none}
+.team-affiliation{font-size:.875rem;font-weight:650;color:var(--ink)}
+.team-action{display:inline-flex;align-items:center;gap:10px;border:1px solid #bdd0d9;border-radius:6px;background:#fff;padding:9px 12px;font-size:.875rem;color:var(--teal)}
+.team-chevron{font-size:1rem;flex-shrink:0;transition:transform .15s}
+.team-top[open] .team-chevron{transform:rotate(180deg)}
+.leaderboard-top-button{border:1px solid var(--teal);border-radius:7px;background:var(--teal);color:#fff;padding:10px 19px;font-size:1rem;font-weight:650;min-height:43px;white-space:nowrap}
+.leaderboard-top-button:hover{background:#00675f}
+.setup-band{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:22px;padding:16px 18px;margin-bottom:26px;background:#e7eef3;border:1px solid #d5e0e7;border-radius:10px}
+.scenario-choice{display:flex;flex-direction:column;gap:10px;min-width:0}
+.setup-label{display:block;font-size:.875rem;font-weight:650;color:#52697a;line-height:1.45}
+.setup-band .scenario-pills{display:flex;flex-wrap:wrap;width:auto;margin:0;gap:6px}
+.setup-band .scenario-pills button{min-height:40px;font-size:.875rem;padding:8px 11px}
+.setup-band .model-band{display:flex;flex-wrap:wrap;align-items:flex-end;align-content:flex-start;gap:10px;margin:0;padding:0;background:none;border:0;border-radius:0;min-width:0}
+.setup-band .model-options{display:flex;flex-direction:column;align-items:flex-start;gap:10px;flex:1;min-width:0}
+.setup-band .model-pills{max-width:100%}
+.setup-band .model-pills button{min-height:40px}
+.setup-band .transmission-button{align-self:flex-end;background:#fff}
+.intro-dialog.player-introduction{width:740px;max-width:calc(100vw - 32px)}
+.intro-dialog .intro-purpose{font-size:1rem;line-height:1.5;color:#385667;margin:12px 0 16px}
+.intro-dialog .intro-how-to{font-size:1rem;line-height:1.5;color:#385667;padding-left:23px;margin:16px 0 18px}
+.intro-dialog .intro-how-to li{padding-left:3px;margin:10px 0}
+.intro-dialog .intro-how-to li::marker{color:var(--teal);font-weight:750}
+.intro-dialog .intro-how-to strong{color:var(--navy)}
+@media(max-width:850px){.setup-band{grid-template-columns:1fr;gap:16px}.setup-band .model-band{padding-top:16px;border-top:1px solid #c9d8e1}}
+@media(max-width:600px){.community-bar{grid-template-columns:1fr;gap:12px}.community-bar .leaderboard-top-button{justify-self:stretch}.community-bar .team-top>summary{gap:8px}.setup-band{padding:14px}.intro-dialog .intro-how-to{padding-left:20px}}
+@media(max-width:520px){.setup-band .scenario-pills{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.setup-band .scenario-pills button{padding:7px 5px;white-space:normal}}
+
+/* Keep the quotation and the player's reply together as one exchange. */
+.intro-exchange{border-left:3px solid var(--mint);padding-left:16px;margin:18px 0 16px}
+.intro-dialog .intro-exchange blockquote{margin:0;border:0;padding:0}
+.intro-dialog .intro-exchange .your-turn{margin:5px 0 0;line-height:1.25;font-weight:750;color:var(--teal)}
+
 /* Event receipts and periodically refreshed public rankings. */
 .current-attempt:not([hidden]){display:block}
 .current-attempt .receipt-heading{display:block;font-size:.875rem;color:#d2e5ed;margin-bottom:14px}
@@ -16,7 +52,7 @@
 .leaderboard-refresh button{flex-shrink:0;font-size:.875rem;padding:8px 10px}
 .leaderboard-error{font-size:.875rem;line-height:1.5;color:#8b4815;background:#fff8e9;padding:10px 12px;border-radius:6px}
 .leaderboard-comparison{font-size:.875rem;line-height:1.5;color:var(--muted);margin:0 0 8px}
-#leaderboard-note,.evaluation-dialog .evaluation-rules{font-size:.875rem}
+.evaluation-dialog .evaluation-rules{font-size:.875rem}
 @media(max-width:420px){.current-attempt .receipt-details{align-items:flex-start;flex-direction:column}.receipt-score{max-width:none;text-align:left}.leaderboard-refresh{align-items:flex-start;flex-direction:column}}
 
 /* Always visible above both the policy and outcome panels. */
