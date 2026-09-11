@@ -5,6 +5,14 @@ import {SCENARIOS,DEFAULT_SCENARIO_ID,scenarioInfo} from './scenarios.mjs';
 import {cleanTag,validTag,normalizeLeaderboards,readLeaderboardDocument,leaderboardView,displayScore} from './leaderboard.mjs';
 
 const $=id=>document.getElementById(id);
+function parseRate(text){
+  const value=String(text).trim().replace('−','-').replace(',','.');
+  return /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(value)?Number(value):NaN;
+}
+function validRateInput(input){
+  const value=parseRate(input.value);
+  return Number.isFinite(value)&&value>=settings.elb&&onRateGrid(value);
+}
 let settings={...DEFAULT_SETTINGS};
 let activeScenarioId=DEFAULT_SCENARIO_ID;
 let rates=reference(settings.horizon,activeScenarioId).rates;
@@ -78,7 +86,7 @@ function renderMode(){
   $('model-options').querySelectorAll('button').forEach(button=>button.disabled=evaluating);
   $('open-settings').disabled=evaluating;
   $('open-transmission').disabled=evaluating;
-  $('rate-inputs').querySelectorAll('input').forEach(input=>input.disabled=submitted);
+  $('rate-inputs').querySelectorAll('input,button').forEach(input=>input.disabled=submitted);
   for(const id of ['shift-down','shift-up','open-smooth'])$(id).disabled=submitted;
   $('reset').disabled=submitted;
   $('reset').textContent=evaluating?'Reset path':'Reset';
@@ -182,7 +190,7 @@ function renderRateChart(){
   chart($('rate-chart'),base.rates,displayed,{interactive:!evaluatedAndSubmitted(),editableCount:K,label:'Annualised interest rates: chosen rates and any model-implied continuation, compared with the 3 percent reference path.'});
 }
 function renderInputs(){
-  $('rate-inputs').innerHTML=rates.map((r,t)=>`<div class="quarter-field"><label for="quarter-${t}">Q${t+1}</label><input id="quarter-${t}" data-quarter="${t}" type="number" inputmode="decimal" step="0.25" min="${settings.elb}" value="${esc(rateText(r))}" ${evaluatedAndSubmitted()?'disabled':''} required aria-label="Quarter ${t+1} annualised interest rate in percent, in steps of 0.25"></div>`).join('');
+  $('rate-inputs').innerHTML=rates.map((r,t)=>`<div class="quarter-field"><label for="quarter-${t}">Q${t+1}</label><div class="quarter-stepper"><button type="button" data-step="-0.25" data-quarter="${t}" aria-label="Lower quarter ${t+1} rate by 0.25 percentage points" ${evaluatedAndSubmitted()?'disabled':''}>−</button><input id="quarter-${t}" data-quarter="${t}" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="${esc(rateText(r))}" ${evaluatedAndSubmitted()?'disabled':''} required aria-label="Quarter ${t+1} annualised interest rate in percent, in steps of 0.25"><button type="button" data-step="0.25" data-quarter="${t}" aria-label="Raise quarter ${t+1} rate by 0.25 percentage points" ${evaluatedAndSubmitted()?'disabled':''}>+</button></div></div>`).join('');
 }
 function renderOutcomes(){
   const base=reference(settings.horizon,activeScenarioId),scenario=scenarioInfo(activeScenarioId);
@@ -283,19 +291,24 @@ function reset(){if(evaluatedAndSubmitted())return;rates=reference(settings.hori
 function updateQuarter(t,value,syncInput=true){
   if(evaluatedAndSubmitted())return;
   rates[t]=snapRate(value,settings.elb);
-  if(syncInput){const input=$(`quarter-${t}`);if(input)input.value=rateText(rates[t]);}
+  if(syncInput){const input=$(`quarter-${t}`);if(input){input.value=rateText(rates[t]);input.removeAttribute('aria-invalid');}}
   changed();
 }
 
 $('rate-inputs').addEventListener('input',event=>{
   const input=event.target;if(!input.matches('input[data-quarter]'))return;
-  const v=input.valueAsNumber;if(input.validity.valid&&onRateGrid(v))updateQuarter(Number(input.dataset.quarter),v,false);
+  const v=parseRate(input.value);input.removeAttribute('aria-invalid');if(validRateInput(input))updateQuarter(Number(input.dataset.quarter),v,false);
   else {dirty=true;renderStatus();}
 });
-$('rate-inputs').addEventListener('change',event=>{const input=event.target;if(!input.matches('input[data-quarter]'))return;if(input.validity.valid&&onRateGrid(input.valueAsNumber))input.value=rateText(input.valueAsNumber);else{$('input-error').textContent='Use rates in steps of 0.25%, at or above −0.50%.';$('input-error').hidden=false;}});
+$('rate-inputs').addEventListener('change',event=>{const input=event.target;if(!input.matches('input[data-quarter]'))return;if(validRateInput(input))input.value=rateText(parseRate(input.value));else{input.setAttribute('aria-invalid','true');$('input-error').textContent='Use rates in steps of 0.25%, at or above −0.50%.';$('input-error').hidden=false;}});
 $('rate-inputs').addEventListener('keydown',event=>{
   const input=event.target;if(!input.matches('input[data-quarter]'))return;
-  if(event.key==='ArrowUp'||event.key==='ArrowDown'){event.preventDefault();const v=Number.isFinite(input.valueAsNumber)?input.valueAsNumber:3;updateQuarter(Number(input.dataset.quarter),Math.max(settings.elb,v+(event.key==='ArrowUp'?.25:-.25)));}
+  if(event.key==='ArrowUp'||event.key==='ArrowDown'){event.preventDefault();const parsed=parseRate(input.value);const v=Number.isFinite(parsed)?parsed:rates[Number(input.dataset.quarter)];updateQuarter(Number(input.dataset.quarter),Math.max(settings.elb,v+(event.key==='ArrowUp'?.25:-.25)));}
+});
+$('rate-inputs').addEventListener('click',event=>{
+  const button=event.target.closest('button[data-step]');if(!button||evaluatedAndSubmitted())return;
+  const t=Number(button.dataset.quarter),value=parseRate($(`quarter-${t}`).value);
+  updateQuarter(t,(Number.isFinite(value)?value:rates[t])+Number(button.dataset.step));
 });
 for(const [id,shift] of [['shift-down',-.25],['shift-up',.25]])$(id).addEventListener('click',()=>{rates=rates.map(v=>snapRate(v+shift,settings.elb));renderInputs();changed();});
 $('open-smooth').addEventListener('click',()=>{
@@ -309,7 +322,7 @@ $('close-smooth').addEventListener('click',()=>$('smooth-dialog').close());
 $('smooth-reference').addEventListener('click',()=>{$('smooth-terminal').value=reference(settings.horizon,activeScenarioId).rates[policyPeriods(settings)-1];});
 $('smooth-form').addEventListener('submit',event=>{
   event.preventDefault();
-  try { rates=smoothRates(rates,$('smooth-start').valueAsNumber,$('smooth-terminal').valueAsNumber,settings.elb);renderInputs();changed();$('smooth-dialog').close(); }
+  try { rates=smoothRates(rates,$('smooth-start').valueAsNumber,parseRate($('smooth-terminal').value),settings.elb);renderInputs();changed();$('smooth-dialog').close(); }
   catch(error){$('smooth-error').textContent=error.message;$('smooth-error').hidden=false;}
 });
 for(const view of ['growth','gap'])$(`view-${view}`).addEventListener('click',()=>{activityView=view;renderOutcomes();});
@@ -318,8 +331,8 @@ $('simulate').addEventListener('click',()=>{
   try{
     if(evaluatedAndSubmitted())return;
     const inputs=[...$('rate-inputs').querySelectorAll('input')];
-    const invalid=inputs.find(i=>!i.validity.valid);if(invalid){invalid.reportValidity();invalid.focus();throw new Error('Enter a rate in steps of 0.25%, at or above −0.50%, for every quarter.');}
-    const chosen=inputs.map(i=>i.valueAsNumber);
+    const invalid=inputs.find(i=>!validRateInput(i));if(invalid){invalid.setAttribute('aria-invalid','true');invalid.focus();throw new Error('Enter a rate in steps of 0.25%, at or above −0.50%, for every quarter.');}
+    const chosen=inputs.map(i=>parseRate(i.value));
     result=simulate(model,chosen,settings,activeScenarioId);rates=chosen;dirty=false;clearError();renderRateChart();renderOutcomes();renderScore();
     if(gameMode==='evaluation'){
       evaluation.submitted=true;
@@ -336,7 +349,7 @@ $('simulate').addEventListener('click',()=>{
 $('rate-chart').addEventListener('pointerdown',event=>{
   if(evaluatedAndSubmitted())return;
   const point=event.target.closest('[data-quarter]');if(!point)return;
-  event.preventDefault();const svg=point.closest('svg');const rect=svg.getBoundingClientRect();
+  event.preventDefault();window.getSelection()?.removeAllRanges();$('rate-chart').setPointerCapture(event.pointerId);const svg=point.closest('svg');const rect=svg.getBoundingClientRect();
   // The SVG is sized to the same aspect ratio as its viewBox.
   drag={t:Number(point.dataset.quarter),rect,geo:{...$('rate-chart')._geometry},id:event.pointerId};
 });
@@ -346,7 +359,15 @@ window.addEventListener('pointermove',event=>{
   const rate=g.hi-(y-g.m.t)/(g.H-g.m.t-g.m.b)*(g.hi-g.lo);
   updateQuarter(drag.t,rate);
 },{passive:false});
-window.addEventListener('pointerup',()=>{drag=null;});window.addEventListener('pointercancel',()=>{drag=null;});
+function endRateDrag(event){
+  if(!drag||event.pointerId!==drag.id)return;
+  if($('rate-chart').hasPointerCapture(event.pointerId))$('rate-chart').releasePointerCapture(event.pointerId);
+  drag=null;
+}
+window.addEventListener('pointerup',endRateDrag);window.addEventListener('pointercancel',endRateDrag);
+$('rate-chart').addEventListener('lostpointercapture',()=>{drag=null;});
+$('rate-chart').addEventListener('selectstart',event=>event.preventDefault());
+$('rate-chart').addEventListener('contextmenu',event=>{if(event.target.closest('[data-quarter]'))event.preventDefault();});
 $('rate-chart').addEventListener('keydown',event=>{
   if(evaluatedAndSubmitted())return;
   const point=event.target.closest('[data-quarter]');if(!point)return;

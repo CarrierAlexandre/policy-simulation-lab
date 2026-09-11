@@ -105,3 +105,30 @@ dialog{border:1px solid #d4dfe7;border-radius:16px;padding:30px;width:560px;max-
 @media(max-width:800px){.mode-switch button{font-size:12px;padding:7px 8px}.leaderboard-dialog{padding:23px}}
 @media(max-width:650px){.header-actions{align-items:center}.mode-switch{order:0}.leaderboard-tabs{grid-template-columns:1fr}.leaderboard-tabs button{min-height:38px}.current-attempt b{font-size:24px}.footer-links{width:100%;justify-content:space-between}}
 @media(max-width:420px){.site-header{min-height:122px}.header-actions{flex-wrap:wrap}.mode-switch button{padding:6px 7px;font-size:11px}.leaderboard-dialog{padding:20px 16px}.current-attempt{padding:13px 14px}.current-attempt strong{font-size:15px}.current-attempt b{font-size:21px}}
+
+/* Rate controls: keep explicit tap targets alongside decimal entry. */
+.rate-inputs{grid-template-columns:repeat(2,minmax(0,1fr))}
+.quarter-stepper{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:4px}
+.quarter-stepper button{width:44px;min-height:44px;padding:0;border:1px solid #c5dedb;border-radius:6px;background:#fff;color:var(--teal);font:inherit;font-size:23px;cursor:pointer;touch-action:manipulation}
+.quarter-stepper button:active{background:#dcefeb}
+.quarter-stepper button:disabled{opacity:.45;cursor:default}
+.quarter-stepper input{text-align:center;min-height:44px;font-size:18px}
+.quarter-field:has(input[aria-invalid="true"]){border-color:#bb5c43}
+#rate-chart,#rate-chart *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#rate-chart{touch-action:pan-y}
+#rate-chart svg{touch-action:pan-y}
+#rate-chart .drag-point{touch-action:none}
+@media (min-width:601px) and (max-width:800px){.rate-inputs{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:360px){.quarter-field{padding:7px 4px}.quarter-stepper{gap:0}.quarter-stepper input{font-size:16px}}
+
+@media (max-width:380px){.rate-inputs{grid-template-columns:1fr}}
+
+/* Compact four-quarter rows, with touch-sized controls on phones. */
+@media (min-width:601px){
+ .rate-inputs{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+ .quarter-field{padding:6px 7px}
+ .quarter-stepper{grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}
+ .quarter-stepper input{grid-column:1 / -1;grid-row:1;min-height:30px;font-size:18px}
+ .quarter-stepper button{grid-row:2;width:100%;min-height:30px;font-size:20px}
+}
+@media (min-width:601px) and (pointer:coarse){.quarter-stepper button{min-height:44px}}
